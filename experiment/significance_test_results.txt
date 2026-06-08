@@ -1,0 +1,12 @@
+=== Per-Topic TC: Mann-Whitney U Test ===
+
+Dual PubMedBERT (¦Á=0.45, ¦Â=0.40, dual-stream, full text): 24 topics, mean TC = 0.5972
+Single-stream baseline (all-MiniLM-L6-v2, abstract only): 24 topics, mean TC = 0.5684
+
+Group TC_PubMedBERT:  mean=0.5972, std=0.1258, n=24
+Group TC_Baseline:    mean=0.5684, std=0.1004, n=24
+
+Mann-Whitney U statistic: 321.00
+p-value (one-sided, 'greater'): 0.251385
+Rank-biserial correlation r: -0.1146
+Significant at ¦Á=0.05: False
