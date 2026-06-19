@@ -1,0 +1,128 @@
+\documentclass[authorproof,JACIII,researchpaper]{fujipressarticle}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{cite}
+\usepackage{bm}
+
+%%% following commands are unnecessary to edit %%%
+\setcounter{page}{1}
+\SetVolume{00}
+\SetIssueNo{0}
+\SetPubYear{0000}
+%\SetArticleID{Rb00-0-0000}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\pagestyle{fujipressstyle}
+
+\title{Title of Your Paper}
+\author{Your Name(s)}
+\address{Your Institute(s)\\
+	Address(es) of Your Institute\\
+	E-mail: Your E-mail address(es)}
+\markboth{Your Name(s)}{(Short) Title of Your Paper}
+\dates{2000/00/00}{2000/00/00}
+\maketitle
+
+
+\begin{abstract}% Do not delete this percent symbol
+	\noindent (Abstract) Please write down your abstract here without an indent.  The word ``Abstract'' is not needed.  
+\end{abstract}
+
+\begin{keywords}
+	keyword1, keyword2, keyword3, .. (up to five)
+\end{keywords}
+
+
+\section{Section}
+An example of an equation, please use \verb|\bm{a}| to write bold math font.
+\begin{equation}
+	i \hbar \frac{\partial \psi (\bm{x},t)}{\partial  t} = -\frac{\hbar ^2}{2m}\bm{{\nabla}}^2 \psi (\bm{x},t)
+\end{equation}
+
+Regarding percentage, degree, minute, and second signs, no space between the numeral and the sign is needed, as par to the “closed style” used in American English format.\par
+  Percentage sign: ~~10\%\par
+  Degree sign: ~~~~~~~~10°C\par
+  Geographic coordinates: ~~N 35°21'14" \par
+
+
+\section{Section}
+\subsection{Sub-Section}
+Sub-Section 2-1.
+
+\subsubsection{Sub-Sub-Section}
+Sub-Sub-Section 2-2-1.
+
+\acknowledgments
+Acknowledgments.
+
+%\bibliographystyle{fujipressbib}
+%\bibliography{refdata.bib}
+
+%[IMPORTANT]
+%To clarify research positioning and purpose, authors should survey international literatures, 
+%including Fujipress publications, and list them in references. It is strongly recommended that 
+%authors include Fujipress publications in references. 
+%All papers appear in the Fujipress and PDFs made available free of charge at the following website at https://www.fujipress.jp/
+
+\begin{thebibliography}{99}
+
+\bibitem{bib1} Name(s), 
+Title, Journal.
+
+\bibitem{bib2} G. Batchuluun, S. H. Nam, and K. R. Park, 
+``Deep learning-based plant-image classification using a small training dataset,'' 
+Mathematics, Vol.10, No.17, Article No.3091, 2022.
+\url{https://doi.org/10.3390/math10173091}
+
+\bibitem{bib3} A. Author et~al., 
+``Title of your paper,'' J. Robot. Mechatron., Vol.0, No.0, pp. 00-00, 20XX. 
+\url{https://doi.org/10.20965/jrm.0000.p00}%
+
+\bibitem{bib4} JACIII Website, https://www.fujipress.jp/jaciii/ [Accessed May 1, 2024]
+
+\end{thebibliography}
+
+\begin{table}[t]
+	\begin{center}
+		\caption{Caption of table.}
+		\label{table}
+		\renewcommand{\arraystretch}{1.5}
+		\begin{tabular}{|c|c|c|c|c|}
+			\hline
+			\textbf{Variable} & \textbf{N} & \textbf{Mean}& 
+			\textbf{Max} & \textbf{Min}  \\ \hline
+			A & 10& 50& 100& 0  \\ \hline
+			B & 20& 80& 200& 0  \\ \hline
+		\end{tabular}
+	\end{center}
+\end{table}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=8cm]{./fig/fig.jpg}
+	\caption{Caption for fig.}
+	\label{fig}
+\end{figure}
+
+
+\appendix
+\section{App-Section}
+Appendix A.
+
+
+%*Profiles and photos are not necessarily required at the first submission
+\begin{profile}
+	\Name{Your Name}
+	\Orcid{0000-0000-0000-0000}
+	\Affiliation{Your Institute}
+	\Address{Address of Your Institute}
+	\History{Your History}
+	\Works{$\bullet$ Your Works}
+	\Membership{$\bullet$ Your Academic and/or Learned Societies}
+	%%please place any image files in subdirectory named ``fig''
+	\Photo{./fig/photosample.pdf}
+\end{profile}
+
+
+\end{document}

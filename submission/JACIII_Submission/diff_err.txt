@@ -1,0 +1,3 @@
+Can't locate Algorithm/Diff.pm in @INC (you may need to install the Algorithm::Diff module) (@INC entries checked: C:/Users/MSI/AppData/Local/Programs/MiKTeX/scripts/latexdiff/ /usr/lib/perl5/site_perl /usr/share/perl5/site_perl /usr/lib/perl5/vendor_perl /usr/share/perl5/vendor_perl /usr/lib/perl5/core_perl /usr/share/perl5/core_perl) at C:/Users/MSI/AppData/Local/Programs/MiKTeX/scripts/latexdiff/latexdiff line 289.
+BEGIN failed--compilation aborted at C:/Users/MSI/AppData/Local/Programs/MiKTeX/scripts/latexdiff/latexdiff line 289.
+latexdiff: critical issue: You are running MiKTeX on an unsupported version of Windows.

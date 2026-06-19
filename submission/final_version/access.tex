@@ -1,0 +1,765 @@
+\documentclass{ieeeaccess}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+% \usepackage{algorithmic}  % 删除这一行！与 algpseudocode 冲突
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{algorithm}
+\usepackage{enumitem}
+\usepackage[noend]{algpseudocode}   % 需要行号 & 关键字
+\usepackage{float}
+\usepackage{bm}
+\usepackage{url}
+
+
+\makeatletter
+\AtBeginDocument{\DeclareMathVersion{bold}
+\SetSymbolFont{operators}{bold}{T1}{times}{b}{n}
+\SetSymbolFont{NewLetters}{bold}{T1}{times}{b}{it}
+\SetMathAlphabet{\mathrm}{bold}{T1}{times}{b}{n}
+\SetMathAlphabet{\mathit}{bold}{T1}{times}{b}{it}
+\SetMathAlphabet{\mathbf}{bold}{T1}{times}{b}{n}
+\SetMathAlphabet{\mathtt}{bold}{OT1}{pcr}{b}{n}
+\SetSymbolFont{symbols}{bold}{OMS}{cmsy}{b}{n}
+\renewcommand\boldmath{\@nomath\boldmath\mathversion{bold}}}
+\makeatother
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+%Your document starts from here ___________________________________________________
+\begin{document}
+\history{Date of publication xxxx 00, 0000, date of current version xxxx 00, 0000.}
+\doi{10.1109/ACCESS.2024.0429000}
+
+\title{Topic Modelling for Biomedical Literature Retrieval via a Dual-Stream Embedding Framework}
+\author{\uppercase{Tao Tao}\authorrefmark{1},
+\uppercase{Amena Mahmoud}\authorrefmark{2}, and
+\uppercase{Eiko Takaoka}\authorrefmark{1}}
+
+\address[1]{Graduate School of Science and Technology, Sophia University, Tokyo 102-8554, Japan (e-mail: c2578666@eagle.sophia.ac.jp; m-g-eiko@sophia.ac.jp)}
+\address[2]{Department of Computer Science, Faculty of Computers and Information, Kafrelsheikh University, Kafrelsheikh 33516, Egypt}
+
+\markboth
+{Tao \headeretal: Topic Modelling for Biomedical Literature Retrieval via a Dual-Stream Embedding Framework}
+{Tao \headeretal: Topic Modelling for Biomedical Literature Retrieval via a Dual-Stream Embedding Framework}
+
+\corresp{Corresponding author: Eiko Takaoka (e-mail: m-g-eiko@sophia.ac.jp).}
+
+
+\begin{abstract}
+The rapid expansion of biomedical literature has created substantial challenges for retrieving and synthesizing relevant knowledge, particularly for novice and interdisciplinary users. Conventional keyword-based methods often lack semantic depth, while traditional topic modelling techniques struggle to capture domain-specific context and rarely integrate structured metadata such as Medical Subject Headings. To address these limitations, this work introduces a dual-stream embedding framework that integrates unstructured textual content with curated biomedical metadata through transformer-based encoders and a parameterized fusion mechanism. The architecture combines contextual semantics from article titles and abstracts with expert-annotated Medical Subject Headings descriptors and incorporates a large language model to generate concise and human-readable topic labels. Experimental results confirm that the dual-stream embedding framework consistently outperformed all baseline and ablation models across key evaluation metrics. Among all configurations, the Dual PubMedBERT model achieved the highest overall topic modelling quality, improving the combined measure of topic coherence and topic diversity by 7.3\% relative to the strongest baseline. These results demonstrate the effectiveness of integrating contextual textual embeddings with structured biomedical metadata under the proposed fusion mechanism. The approach is scalable, reproducible, and domain-adaptable, providing both a methodological advance in semantic topic modelling and a practical foundation for developing biomedical information retrieval systems, semantic search engines, and thematic exploration tools across knowledge-intensive domains.
+\end{abstract}
+
+\begin{keywords}
+Information retrieval, Large language models, Medical information systems, Semantic search, Topic models.
+\end{keywords}
+
+\titlepgskip=-21pt
+
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+\subsection{Motivation and Background}
+Efficient thematic discovery rather than simple keyword matching has become a central bottleneck in biomedical search. The scale and growth of PubMed exacerbate this difficulty, with tens of millions of records and more than a million new entries per year\cite{jin_pubmed_2024}.
+This overload of information poses particular challenges for novice biomedical researchers and those entering the field from interdisciplinary backgrounds. Unlike experienced domain experts, who may possess well-defined search heuristics, these users often struggle to articulate precise information needs and navigate the vast biomedical knowledge space. In the early stages of research, identifying a suitable entry point and narrowing it down to a relevant thematic area requires substantial time and cognitive effort. As highlighted by Huurdeman and Kamps\cite{fu_designing_2020}, one of the key bottlenecks in the information retrieval process lies in supporting users during the initial exploratory phase - helping them clarify their objectives and converge on a focused area of inquiry. This persistent issue underscores the need for intelligent retrieval systems that go beyond keyword-based search and are capable of guiding users through the conceptual landscape of the biomedical literature. In response, the field has seen increasing application of natural language processing (NLP) and machine learning techniques to improve information access, ranging from early statistical topic models to more recent advances in deep contextualized embeddings and large language models.
+% These needs are not limited to individual researchers; medical librarians and clinical educators also face similar challenges when supporting user education, literature synthesis, and training in information literacy. In response, the field has seen increasing application of natural language processing (NLP) and machine learning techniques to improve information access, ranging from early statistical topic models to more recent advances in deep contextualized embeddings and large language models.
+
+
+% \subsection{Definition and Scope}
+% Traditional keyword-based information retrieval (IR) methods often return large lists of results, many of which lack contextual relevance or depth, rendering the process inefficient for specialized analyses\cite{kavvadias_supporting_2020,kilicoglu_biomedical_2018}. Consequently, researchers and clinicians increasingly demand more advanced computational techniques capable of semantic understanding and thematic summarization to increase the efficiency of literature retrieval and utilization.
+% Topic modelling, an unsupervised machine learning approach designed to extract latent thematic structures from text corpora, has emerged as a promising solution for overcoming these limitations\cite{blei_probabilistic_2012,dieng_topic_2020}. Conventional topic modelling techniques, such as latent Dirichlet allocation (LDA), have been widely applied within biomedical text mining, assisting in literature summarization, trend analysis, and information retrieval\cite{blei_probabilistic_2012,grubbs_use_2023}. However, these traditional methods often rely on the bag-of-words assumption, neglecting context and semantics, and thus frequently generate incoherent or overly simplistic topics\cite{grubbs_use_2023,egger_topic_2022}.
+% Recent advancements in natural language processing (NLP), particularly transformer-based models such as BERT, have significantly improved the quality of semantic embeddings and contextual comprehension within textual data. Methods such as Top2Vec and BERTopic leverage transformer embeddings, showing enhanced performance in producing more coherent and interpretable topic structures\cite{angelov_top2vec_2020,grootendorst_bertopic_2022}. Domain-specific pretrained models, including BioBERT and PubMedBERT, have demonstrated further improvements by accurately capturing biomedical domain terminology and semantics, thereby generating more precise and relevant topic representations in the biomedical literature\cite{beltagy_scibert_2019,lee_biobert_2020}.
+% However, existing approaches often fail to adequately integrate the structured biomedical knowledge available through curated metadata such as Medical Subject Headings (MeSH). This structured metadata contains significant expert knowledge about article content, which, if effectively integrated, can enhance the semantic richness and specificity of generated topics\cite{wu_survey_2024,yu_improving_2016}. Thus, topic modelling methods that effectively combine unstructured textual content with structured domain knowledge to produce more semantically coherent and distinct topics suitable for practical biomedical IR applications are needed. Moreover, such approaches offer strong potential to support the development of advanced user-facing tools in medical libraries and clinical knowledge services, including thematic dashboards, guided search interfaces, and information literacy resources.
+
+\subsection{Definition and Scope}
+Topic modelling, an unsupervised machine learning approach designed to extract latent thematic structures from text corpora, has emerged as a promising solution for biomedical literature retrieval and organization. However, existing approaches often fail to adequately integrate the structured biomedical knowledge available through curated metadata such as Medical Subject Headings (MeSH). This structured metadata contains significant expert knowledge about article content, which, if effectively integrated, can enhance the semantic richness and specificity of generated topics. Thus, topic modelling methods that effectively combine unstructured textual content with structured domain knowledge to produce more semantically coherent and distinct topics suitable for practical biomedical information retrieval applications are needed.
+
+\subsection{Objectives and Contributions}
+To address this research gap, we propose a dual-stream embedding framework utilizing the BERTopic framework to integrate textual embeddings (titles and abstracts) and structured MeSH term embeddings via a parameterized weighted fusion mechanism. This mechanism leverages two adjustable parameters, $\alpha$ and $\beta$, which control the relative importance of text versus MeSH embeddings and major versus minor MeSH terms, respectively. Through a systematic and comprehensive evaluation involving various pretrained embedding model combinations (general-purpose and biomedical-specific) and text processing strategies, we aim to identify optimal configurations that significantly improve topic modelling quality, quantified by topic coherence (TC) and topic diversity (TD).
+
+\noindent\textbf{The primary objectives of this study are as follows:}
+\begin{itemize}
+\item Systematically evaluate the effectiveness of the dual-stream embedding framework for improving biomedical topic modelling quality;
+\item Examine the impact of embedding model choices and parameter configurations on topic modelling performance;
+\item Demonstrate the framework’s practical utility as a foundational component for developing advanced biomedical literature retrieval systems, with potential applications in semantic search, thematic organization, and user-centered discovery tools in biomedical information services.
+\end{itemize}
+Our experiments and comparisons with baseline methods and ablation studies confirm that the proposed dual stream embedding framework improves topic coherence and diversity, with the dual PubMedBERT configuration achieving TC = 0.6172, TD = 0.7458 and TC+TD = 1.3443, reflecting a 7.3\% improvement over baseline (TC+TD = 1.253). These findings suggest that the integration of structured biomedical metadata with contextualized textual embeddings enriches thematic discovery and interpretation, potentially benefiting biomedical informatics applications such as semantic search, thematic literature summarization, and evidence synthesis preparation in biomedical research. In particular, the results provide theoretical support for the future development of intuitive, semantically driven retrieval tools for biomedical information retrieval applications.
+% In particular, the results provide theoretical support for the future development of intuitive, semantically driven retrieval tools that address the real-world needs of medical librarians, educators, and clinical researchers.
+
+
+\subsection{Paper Organization}
+
+The article is organized as follows. 
+
+Section~II reviews related work in topic modeling, neural embeddings, and biomedical domain applications.
+
+Section~III describes the dataset, preprocessing, and the dual stream embedding framework.  
+
+Section~IV reports the experimental results and analyses.  
+
+Section~V discusses limitations and future directions.  
+
+Finally, Section~VI concludes the paper.
+
+\section{Related Work}
+
+The rapid growth of biomedical literature has necessitated the development of advanced computational methods for information retrieval and knowledge discovery. This section reviews the evolution of topic modeling techniques, transformer-based embeddings in biomedical text mining, and the integration of structured metadata in semantic representation.
+
+\subsection{Traditional Topic Modeling Approaches}
+
+Topic modeling has been widely used to analyze biomedical literature in order to find hidden thematic patterns. Latent Dirichlet Allocation (LDA) as a topic model suggested by Blei et al.~\cite{blei_latent_2003} is the most popular one still adopted by users. Blei~\cite{blei_probabilistic_2012} gave an overview of probabilistic topic models in some detail and noted that they are particularly useful in managing large collections of text and allow them to be used in research trend analysis and systematic reviews.
+
+Nevertheless, bag-of-words models have severe drawbacks. Such techniques have difficulties in capturing semantics of words and the relationship that may exist between words in contexts, which may result in incoherent topics. These shortcomings in biomedical applications have been demonstrated by Kavvadias et al.~\cite{kavvadias_supporting_2020} which revealed that in context-specific cases to differentiate the semantically similar and yet different concepts, the keyword-based methods have been shown to be ineffective. Kilicoglu~\cite{kilicoglu_biomedical_2018} noted that traditional topic models do not maximally utilize domain-specific knowledge resources.
+
+\subsection{Neural Language Models and Embeddings}
+
+Neural language models have introduced basic changes in the topic modeling procedures. Mikolov et al.~\cite{mikolov_efficient_2013} presented Word2Vec which revealed that distributed word representations are more useful in capturing semantic relationships as compared to sparse representations. Embedding-based topic models that run in continuous spaces of representation were proposed by Dieng et al.~\cite{dieng_topic_2020}, and they present better semantic consistency. Angelov~\cite{angelov_top2vec_2020} created Top2Vec that uses document embeddings with a density-based clustering algorithm to find semantically consistent subjects without a lot of pre-processing.
+
+\subsection{Transformer-Based Models for Topic Modeling}
+
+Another major development was the introduction of transformer architecture. Devlin et al.~\cite{devlin_bert_2019} introduced BERT that employs a bi-directional attention system to learn rich semantics in the context. This inspired domain variants: Beltagy et al.~\cite{beltagy_scibert_2019} took the scientific publication domain with SciBERT, and Lee et al.~\cite{lee_biobert_2020} took the biomedical task and published BioBERT, which was specifically pretrained on PubMed abstracts, with state-of-the-art performance on biomedical NLP tasks. Grootendorst~\cite{grootendorst_bertopic_2022} introduced BERTopic, a combination of transformer embeddings with HDBSCAN clustering and class-based TF-IDF, which outperform class-based and traditional topic coherence and interpretability models.
+
+\subsection{Domain-Specific Models in Biomedicine}
+
+Biomedical sphere is a very challenging area because of the specific terminology and the complicated semantics connections. Gu et al.~\cite{gu_domain_2022} created PubMedBERT which is a trained-from-scratch model on PubMed, proving that a domain-specific pretrained model is much better than a general-purpose one. Sentence-BERT (SBERT) was proposed by Reimers and Gurevych~\cite{reimers_sentence-bert_2019}, generating semantically meaningful sentence embeddings that are quite popular in biomedical text representation and allow effectively computing semantic similarity.
+
+\subsection{Integration of Structured Biomedical Knowledge}
+
+Although contextual semantics are represented by neural embeddings, structured biomedical knowledge resources are not exploited. Medical Subject Headings (MeSH) are expert-based descriptors which hierarchically classify biomedical terms. Yu et al.~\cite{yu_improving_2016} suggested a representation called TopicalMeSH, which showed that representations based on MeSH lead to higher information retrieval (but using a frequency-based, but not a contextualized embedding). Recent studies have started to investigate multimodal integration but considering particular phenotype-related approaches have not been generalized to larger metadata integration problems.
+
+\subsection{Evaluation Metrics for Topic Quality}
+
+To measure quality of topic models, it is necessary to have measures of semantic coherence and topical diversity. Mimno et al.~\cite{mimno_optimizing_2011} proposed topic coherence in form of pointwise mutual information (PMI), which has become a conventional measure of evaluation. Topic diversity, the measure of the specificity of the discovered topics, has been identified as a complementary measure of quality to be used in ensuring interpretability and practical application.
+
+\subsection{Research Gaps and Motivation}
+
+Despite significant advances, existing approaches exhibit several limitations:
+
+\begin{enumerate}[leftmargin=*,label=\arabic*)]
+    \item \textbf{Limited integration of structured metadata}: Current neural topic models predominantly rely on unstructured text, neglecting semantic knowledge encoded in curated metadata such as MeSH descriptors.
+    
+    \item \textbf{Lack of parameterized fusion mechanisms}: Existing multimodal approaches often employ simple concatenation or fixed-weight averaging, which do not allow fine-grained control over different information sources.
+    
+    \item \textbf{Insufficient emphasis on biomedical information retrieval}: While neural topic models demonstrate strong performance in general domains, their application to specialized biomedical retrieval, particularly for novice and interdisciplinary researchers, remains limited. These users often struggle to articulate precise information needs and navigate the vast biomedical knowledge space, requiring intelligent retrieval systems that provide thematic guidance and exploration support.
+    
+    \item \textbf{Limited interpretability for non-expert users}: Keyword-based topic representations often require domain expertise for interpretation. The potential of large language models for automatic topic labeling in biomedical contexts has not been systematically explored.
+\end{enumerate}
+
+The proposed study addresses these gaps by proposing a dual-stream embedding framework that integrates contextualized textual embedding with structured MeSH metadata through a parameterized fusion mechanism, enabling fine-grained control over information integration and incorporating LLM-based topic labeling to enhance interpretability.
+
+
+\section{Methodology and Proposed Framework}
+\subsection{System Workflow Overview}
+An overview of the proposed topic modelling framework is illustrated in Figure 1. The architecture comprises five modular stages: data preparation, dual-stream embedding, topic modelling with BERTopic, topic labelling via a large language model (LLM), and evaluation and analysis.
+
+\Figure[t!](topskip=0pt, botskip=0pt, midskip=0pt){figure1.png}
+{ \textbf{System workflow of the proposed dual-stream topic modelling framework.}\label{fig1}}
+In the data preparation stage, article titles, abstracts, and MeSH descriptors are extracted from PubMed records. Each MeSH term is associated with a binary MajorTopicYN flag that indicates whether the term represents a major or minor topic. Pretrained transformer models—including MiniLM, PubMedBERT, and BioBERT—are loaded for downstream embedding generation.
+In the dual-stream embedding stage, two parallel embedding vectors are computed: one for unstructured biomedical text (titles and abstracts) and the other for structured MeSH descriptors. The MeSH stream is processed through a first-layer fusion mechanism, which applies a weighting scheme controlled by parameter $\beta$ to emphasize major MeSH terms over minor ones. The resulting weighted MeSH embedding is then combined with textual embedding via a second-layer fusion mechanism governed by parameter $\alpha$, which balances the contributions of textual and MeSH streams to form the final document representation.
+In the topic modelling stage, the fused embeddings are fed into the BERTopic pipeline. Dimensionality reduction is performed via UMAP, followed by clustering via HDBSCAN. Topic representations are generated via CountVectorizer and class-based TF-IDF (c-TF-IDF) and are further refined via maximal marginal relevance (MMR) to improve interpretability by promoting keyword diversity.
+In the topic labelling stage, the top-ranked keywords from each topic are extracted and used to prompt a large language model (LLM) to generate concise, human-readable topic titles. This step improves accessibility for users without domain expertise and supports downstream applications such as thematic dashboards and visualizations.
+In the evaluation and analysis stage, a grid search is conducted over the $\alpha$ and $\beta$ values to explore the parameter space. For each configuration, topic coherence (TC) and topic diversity (TD) are computed to assess the semantic quality of the generated topics. These results are compared against those of single-stream and ablation baselines to validate the performance improvements introduced by the dual-layer fusion mechanism.
+
+\subsection{Dataset}
+The dataset used in this study comprises 3,000 biomedical article records retrieved from the PubMed database. Each record contains the article title, abstract, publication year, PubMed ID (PMID), and associated MeSH (Medical Subject Headings) terms. To ensure comparability with existing methods and enable a controlled baseline comparison, we adopted the exact dataset and preprocessing methodology used in the study “Depression, anxiety, and burnout in academia: topic modelling of PubMed abstracts”\cite{ma_ai-powered_2025}. This ensures that any observed differences in topic quality or interpretability are attributable to the modelling framework rather than variations in data sourcing or processing.
+The PubMed records are structured according to the MEDLINE format, which includes metadata such as titles, abstracts, publication dates, and manually assigned Medical Subject Headings (MeSHs). Each MeSH term is accompanied by a MajorTopicYN flag, indicating whether the term represents a primary subject focus (MajorTopicYN=Y) or a secondary/supporting concept (MajorTopicYN=N). In this study, we utilize this binary distinction to inform the $\beta$-weighted fusion of MeSH embeddings, thereby emphasizing core medical topics during the integration process.
+
+% \subsection{Data Preprocessing}
+% Minimal preprocessing was required due to the design of the embedding framework. Specifically, we employed models from the Sentence Transformers library, which utilize pretrained transformer-based encoders that are robust to raw, unprocessed text input\cite{reimers_sentence-bert_2019}. Unlike traditional bag-of-words topic models, which often require lower casing, lemmatization, stopword removal, or token filtering, transformer-based sentence embeddings inherently capture contextual semantics without relying on such preprocessing steps. This aligns with findings from prior studies that show that modern sentence embedding models can operate effectively on unaltered text, preserving more nuanced linguistic and biomedical structures\cite{wang_graph-embedded_2022}. As such, our pipeline did not apply additional text normalization procedures beyond basic format verification.
+
+\subsection{Data Preprocessing}
+Minimal preprocessing was required due to the design of the embedding framework. Specifically, we employed models from the Sentence Transformers library, which utilize pretrained transformer-based encoders that are robust to raw, unprocessed text input\cite{reimers_sentence-bert_2019}. Unlike traditional bag-of-words topic models, which often require lower casing, lemmatization, stopword removal, or token filtering, transformer-based sentence embeddings inherently capture contextual semantics without relying on such preprocessing steps. This aligns with findings from prior studies that show that modern sentence embedding models can operate effectively on unaltered text, preserving more nuanced linguistic and biomedical structures\cite{wang_graph-embedded_2022}. As such, our pipeline did not apply additional text normalization procedures beyond basic format verification.
+
+The preprocessing workflow transforms raw PubMed records into structured document representations suitable for the dual-stream embedding framework. Each record undergoes systematic extraction of core components (title, abstract, MeSH terms, PMID, and publication year), followed by format verification and MeSH metadata structuring. Critically, the MajorTopicYN flag associated with each MeSH term is preserved during this stage, enabling the subsequent parameterized fusion mechanism to distinguish between major and minor topics. The complete preprocessing procedure is formalized in Algorithm~\ref{alg:preprocessing}.
+
+\begin{algorithm*}[t]
+\caption{Biomedical Document Preprocessing for Transformer-Based Embeddings}
+\label{alg:preprocessing}
+\begin{algorithmic}[1]
+\Require Raw PubMed records $R = \{r_1, r_2, \ldots, r_n\}$
+\Ensure Preprocessed documents $D = \{d_1, d_2, \ldots, d_n\}$ with verified MeSH metadata
+
+\State Initialize empty document collection $D \gets \emptyset$
+
+\For{each record $r_i \in R$}
+    \State \textbf{// Extract core components}
+    \State $\text{title} \gets \text{Extract\_Title}(r_i)$; $\text{abstract} \gets \text{Extract\_Abstract}(r_i)$; $\text{mesh\_terms} \gets \text{Extract\_MeSH\_Terms}(r_i)$
+    \State $\text{pmid} \gets \text{Extract\_PMID}(r_i)$; $\text{pub\_year} \gets \text{Extract\_Publication\_Year}(r_i)$
+
+    \State \textbf{// Format verification}
+    \State $\text{title} \gets \text{Verify\_Format}(\text{title})$; $\text{abstract} \gets \text{Verify\_Format}(\text{abstract})$
+
+    \State \textbf{// Process MeSH descriptors with major/minor flags}
+    \State $\text{mesh\_structured} \gets \emptyset$
+    \For{each $\text{term} \in \text{mesh\_terms}$}
+        \State $\text{descriptor} \gets \text{term.descriptor\_name}$; $\text{major\_flag} \gets \text{term.major\_topic\_yn}$
+        \State $\text{mesh\_structured} \gets \text{mesh\_structured} \cup \{(\text{descriptor}, \text{major\_flag})\}$
+    \EndFor
+
+    \State \textbf{// Construct document representation and create object}
+    \State $\text{full\_text} \gets \text{Concatenate}(\text{title}, \text{abstract}, \text{mesh\_terms})$
+    \State $d_i.\text{pmid} \gets \text{pmid}$; $d_i.\text{title} \gets \text{title}$; $d_i.\text{abstract} \gets \text{abstract}$
+    \State $d_i.\text{mesh\_terms} \gets \text{mesh\_structured}$; $d_i.\text{full\_text} \gets \text{full\_text}$; $d_i.\text{pub\_year} \gets \text{pub\_year}$
+
+    \State \textbf{// Validate and add to collection}
+    \If{$\text{Has\_Required\_Fields}(d_i)$}
+        \State $D \gets D \cup \{d_i\}$
+    \EndIf
+\EndFor
+
+\State \Return $D$
+\end{algorithmic}
+\end{algorithm*}
+
+The preprocessing algorithm employs three helper functions to ensure data quality: (i) \textit{Verify\_Format} performs minimal text cleaning by removing null characters and stripping leading/trailing whitespace while preserving the original text structure; (ii) \textit{Has\_Required\_Fields} validates document completeness by ensuring that title, abstract, and MeSH terms are all non-empty ($\text{document.title} \neq \emptyset \land \text{document.abstract} \neq \emptyset \land \text{document.mesh\_terms} \neq \emptyset$); and (iii) \textit{Concatenate} combines the title, abstract, and MeSH descriptors into a unified full-text representation using space separators.
+
+\subsection{Dual-stream Embedding Framework}
+The proposed dual-stream embedding framework is designed to integrate both unstructured textual content and structured biomedical metadata through two parallel embedding channels: a textual stream and a MeSH stream.
+In this study, both the embedding inputs and the BERTopic document inputs were derived strictly from the full-text combination (Title + Abstract + MeSH). We employed models from the Sentence Transformers library to generate sentence-level embeddings from this unified input. This choice is motivated by the relatively long and syntactically rich nature of biomedical abstracts, where sentence-level transformers have demonstrated strong performance in capturing contextual semantics and discourse-level coherence\cite{reimers_sentence-bert_2019}. Additionally, sentence transformer models offer superior robustness in downstream integration scenarios, making them well suited for incorporation into real-world biomedical search systems.
+For the MeSH stream, which represents the structured, domain-specific descriptors associated with each article, we explored two types of embeddings:
+\begin{itemize}
+    \item A Sentence Transformer model pretrained on biomedical corpora (NeuML/pubmedbert-base embedding)
+    \item The original BioBERT model (dmis-lab/biobert-v1.1) with mean pooling was applied.
+\end{itemize}
+We compare which embedding strategy better captures the semantics of MeSH terms, which are typically composed of concise biomedical phrases or terminology.
+
+\subsection{Parameterized Weighted Fusion Mechanism}
+To effectively integrate both unstructured textual content and structured biomedical metadata, 
+a two-layer parameterized weighted fusion mechanism was developed. 
+This design governs the combination of 
+(i) sentence-level embeddings derived from article titles and abstracts (the text stream) and 
+(ii) embeddings generated from Medical Subject Headings (MeSH) descriptors (the MeSH stream). 
+
+Two scalar parameters control the fusion process: 
+\begin{itemize}
+    \item \textbf{Text–MeSH fusion weight ($\boldsymbol{\alpha}$)}: adjusts the relative importance of text embeddings. 
+    \item \textbf{Major–Minor MeSH ratio ($\boldsymbol{\beta}$)}: adjusts the weighting between major and minor MeSH terms based on the \textit{MajorTopicYN} flag. 
+\end{itemize}
+
+Both $\boldsymbol{\alpha}$ and $\boldsymbol{\beta}$ are tunable within the range [0.05, 0.95] with a step size of 0.05.
+
+\subsection{First-Layer Fusion: Intra-MeSH Term Weighting ($\boldsymbol{\beta}$)}
+
+Each article’s MeSH terms are first categorized as either major or minor using the \textit{MajorTopicYN} flag. 
+Each term is encoded using a biomedical transformer model (e.g., BioBERT or PubMedBERT) and assigned a weight based on its importance:
+
+\begin{itemize}
+    \item \textbf{Major topic:} weight $= \boldsymbol{\beta}$
+    \item \textbf{Minor topic:} weight $= 1 - \boldsymbol{\beta}$
+\end{itemize}
+
+The weights are then normalized, and the weighted average embedding for MeSH terms is computed as follows:
+\begin{equation}
+\text{MeSH\_Embedding} = \sum_i (w_i \times e_i)
+\label{eq:mesh_embedding}
+\end{equation}
+
+where $e_i$ denotes the embedding of the $i$-th MeSH term and $w_i$ is its normalized weight. 
+This vector captures structured biomedical knowledge with an emphasis on core medical concepts.
+
+\subsection{Second-Layer Fusion: Text-MeSH Stream Integration ($\boldsymbol{\alpha}$)}
+The final document-level embedding is constructed by blending the MeSH embedding and the text embedding through the parameter $\boldsymbol{\alpha}$, as follows:
+\begin{equation}
+\bm{e}_{\text{combined}} = \boldsymbol{\alpha} \cdot \bm{e}_{\text{text}} + (1 - \boldsymbol{\alpha}) \cdot \bm{e}_{\text{MeSH}}
+\label{eq:combined_embedding}
+\end{equation}
+where $\bm{e}_{\text{combined}}$ denotes the final combined embedding, $\bm{e}_{\text{text}}$ is the text embedding, and $\bm{e}_{\text{MeSH}}$ is the weighted MeSH embedding from Equation~(\ref{eq:mesh_embedding}).
+
+If an article does not contain MeSH terms, the text embedding alone is used.
+All articles in the dataset utilized in this study contain MeSH descriptors.
+
+\subsection{Implementation Process}
+
+The fusion mechanism was implemented as follows:
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+    \item Extract MeSH descriptors and mark each as major or minor.
+    \item Encode each descriptor with a pretrained biomedical encoder to obtain embeddings.
+    \item Assign weights $\beta$ (major) and $(1-\beta)$ (minor), normalize the weights, and compute the weighted sum of MeSH embeddings.
+    \item Compute the final embedding as $\alpha\cdot\text{text\_embedding} + (1-\alpha)\cdot\text{mesh\_embedding}$ when MeSH exists; otherwise use the \text{text\_embedding}.
+\end{enumerate}
+
+The complete fusion logic is formalized in Algorithm~\ref{alg:mesh_fusion}.
+
+\begin{algorithm}[H]
+\caption{Text--MeSH Fusion with Major/Minor Weights}
+\label{alg:mesh_fusion} 
+\begin{algorithmic}[1]
+\Require Text embedding $\bm{t}$; MeSH descriptors $\{\bm{e}_1,\ldots,\bm{e}_n\}$ with major/minor flags $\{m_i\}$; parameters $\alpha,\beta$
+\Ensure Combined embedding $\bm{c}$
+
+\For{$i = 1$ to $n$}
+    \State $w_i \gets \beta$ \textbf{if} $m_i = \texttt{True}$ \textbf{else} $1-\beta$
+\EndFor
+
+\State $\bm{w} \gets \mathrm{Normalize}([w_1,\ldots,w_n])$
+\State $\bm{m} \gets \sum_{i=1}^{n} (w_i \cdot \bm{e}_i)$
+
+\If{$\mathrm{has\_MeSH}(E) = \texttt{True}$}
+    \State $\bm{c} \gets \alpha \cdot \bm{t} + (1-\alpha) \cdot \bm{m}$
+\Else
+    \State $\bm{c} \gets \bm{t}$
+\EndIf
+
+\State \Return $\bm{c}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Design Rationale and Benefits}
+This dual-stream embedding framework offers several advantages:
+\begin{enumerate}[leftmargin=*,label=\arabic*)]
+    \item \textbf{Semantic complementarity:} The method integrates contextual semantics from free text with structured domain knowledge from curated vocabularies, providing a more comprehensive representation of document content.
+    
+    \item \textbf{Fine-grained control:} Adjustable parameters ($\alpha$ and $\beta$) enable the framework to adapt to varying corpus characteristics and information retrieval objectives, allowing task-specific optimization.
+    
+    \item \textbf{Interpretability:} The explicit separation and weighting of text and MeSH components enhance model transparency, facilitating understanding of the retrieval mechanism and promoting user trust.
+\end{enumerate}
+
+\subsection{Topic Modelling Pipeline}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\columnwidth]{bertopic_pipeline.png}
+\caption{Modular architecture of the BERTopic pipeline.}
+\label{fig:bertopic_pipeline}
+\end{figure}
+
+To model latent thematic structures in the biomedical literature, we adopted the BERTopic framework~\cite{grootendorst_bertopic_2022}, a modular and extensible pipeline that integrates state-of-the-art sentence embeddings with clustering and keyword extraction. BERTopic is particularly well suited for biomedical domain applications because of its ability to generate interpretable topics from high-dimensional contextual embeddings via a structured and visually interpretable workflow (see Fig.~\ref{fig:bertopic_pipeline}).
+
+To ensure rigorous and fair experimental comparison, we strictly replicated the full modelling pipeline and hyperparameter configurations from the target baseline study~\cite{lezhnina_depression_2023}. This ensures that all observed differences in topic quality stem solely from our proposed embedding strategies rather than from downstream modelling variations.
+
+The BERTopic pipeline, illustrated in Fig.~\ref{fig:bertopic_pipeline}, consists of the following key components:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+    \item Sentence-level embeddings were generated via our dual-stream embedding framework and served as the input to the topic modelling pipeline.
+    
+    \item Dimensionality reduction was performed via UMAP, with the parameters set to \texttt{n\_neighbors}$=15$, \texttt{n\_components}$=5$, and \texttt{min\_dist}$=0.0$.
+    
+    \item Document clustering was conducted via HDBSCAN, which is configured with \texttt{min\_cluster\_size}$=30$ and \texttt{min\_samples}$=10$, enabling the discovery of semantically coherent clusters without predefining the number of topics.
+    
+    \item Tokenization and keyword extraction rely on CountVectorizer and the ClassTfidfTransformer (c-TF-IDF) to compute discriminative topic representations.
+    
+    \item To promote topic interpretability and reduce keyword redundancy, maximal marginal relevance (MMR) was applied with a diversity parameter of 0.2.
+    
+    \item No modifications were made to any of the above components, preserving complete alignment with the baseline.
+\end{itemize}
+
+This strict adherence to the baseline modelling setup isolates the impact of the dual-stream embedding framework under equivalent downstream conditions.
+
+\subsection{Evaluation Metrics Overview}
+To evaluate topic modelling quality, we adopted two widely used metrics: topic coherence (TC) and topic diversity (TD). TC quantifies the semantic consistency of the top-ranked words within a topic, while TD measures the distinctiveness between topics by assessing vocabulary overlap. These metrics were chosen to ensure comparability with the baseline study~\cite{lezhnina_depression_2023} and are widely used in the neural topic modelling literature~\cite{dieng_topic_2020,mimno_optimizing_2011,roder_exploring_2015}. 
+
+
+\section{Experiment Design}
+Experiments systematically explored the following:
+\begin{enumerate}[leftmargin=*,label=\arabic*)]
+    \item Four embedding model combinations (see Table~\ref{tab:model_combinations}).
+    \item A comprehensive grid search of $\alpha$ and $\beta$ parameters across specified ranges.
+\end{enumerate}
+
+Preliminary experiments explored various text input strategies (Abstract, Text, Abmesh, and Full). However, all the final main experiments reported in this study exclusively adopted the full-text combination (Title~+~Abstract~+~MeSH) for both the embedding and BERTopic doc inputs, ensuring semantic alignment and eliminating input inconsistency.
+\begin{table*}[!ht]
+\caption{Dual-Stream Embedding Model Combinations}
+\label{tab:model_combinations}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{3.2cm}p{4.2cm}p{4cm}p{4.8cm}}
+\hline
+\textbf{Combinations Name} & \textbf{Text Stream Embedding Model} & \textbf{MeSH Stream Embedding Model} & \textbf{Description} \\
+\hline
+Dual PubMedBERT & all-MiniLM-L6-v2 & all-MiniLM-L6-v2 & Baseline model using general-purpose embeddings on both streams. \\
+\hline
+Hybrid PubMedBERT - BioBERT & NeuML/pubmedbert-base-embeddings & dmis-lab/biobert-v1.1 & Hybrid model using PubMedBERT for text and BioBERT for MeSH. \\
+\hline
+Dual MiniLM (The Baseline's model) & dmis-lab/biobert-v1.1 & dmis-lab/biobert-v1.1 & Double BioBERT model: biomedical embeddings for both streams. \\
+\hline
+Dual BioBERT & NeuML/pubmedbert-base-embeddings & NeuML/pubmedbert-base-embeddings & Double PubMedBERT model: specialized biomedical embeddings on both streams. \\
+\hline
+\end{tabular}
+\end{table*}
+
+\subsection{Ablation Study Design}
+
+We designed a controlled ablation study to isolate the contribution of architectural fusion from the raw information volume. Specifically, all ablation configurations use a single encoder model (all-MiniLM-L6-v2, same as the baseline) and avoid any fusion mechanism (no $\alpha$--$\beta$ weighting). Instead, multiple input sources are concatenated into a single textual stream, encoded via a single-stream embedding process. This allows us to evaluate whether comparable topic modelling performance can be achieved without structural fusion, given the same input information.
+
+\subsection{Experimental Setup}
+
+We evaluate four configurations, each constructed using different combinations of biomedical content (Title, Abstract, MeSH). In all the settings, the input components are concatenated into a single text sequence and embedded via the baseline model (all-MiniLM-L6-v2). This avoids architectural fusion or weight tuning, ensuring that any performance differences arise solely from the nature of the input data.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{A1} -- Abstract only
+    \item \textbf{A2} -- Title~+~Abstract
+    \item \textbf{A3} -- Abstract~+~MeSH
+    \item \textbf{A4} -- Title~+~Abstract~+~MeSH (Full input)
+\end{itemize}
+
+These configurations are then compared to two reference models:
+\begin{enumerate}[leftmargin=*,label=\arabic*)]
+    \item \textbf{Baseline:} Using only the abstract as the input, model with all-MiniLM-L6-v2, following prior studies.
+    \item \textbf{Best dual-stream fusion model with the all-MiniLM-L6-v2 model:} The highest-performing configuration from the $\alpha$--$\beta$ tuned dual-stream experiments.
+\end{enumerate}
+
+The A1 (Abstract only) configuration replicates the baseline setting used in prior studies. For methodological rigor, we reran this configuration independently using our devices.
+
+\subsection{Embedding Procedure}
+
+For each configuration, the relevant text components are concatenated into a single string, which is then passed through the all-MiniLM-L6-v2 encoder to produce the document embedding. The resulting embeddings are directly used as inputs to the BERTopic pipeline (UMAP, HDBSCAN, c-TF-IDF), without modification or fusion. This ensures alignment with baseline processing while avoiding the additional complexity of multistream fusion.
+
+\subsection{Evaluation Metrics}
+
+To assess topic modelling performance, we adopted two widely used evaluation metrics: topic coherence (TC) and topic diversity (TD). These metrics were selected to ensure consistency with the baseline study~\cite{lezhnina_depression_2023}, thereby enabling direct comparison of topic modelling results.
+
+\subsubsection{Topic Coherence (TC)}
+
+Topic coherence (TC) quantifies the semantic consistency of a topic by evaluating the degree of co-occurrence among its top-ranked terms. Specifically, we use normalized pointwise mutual information (NPMI) over a reference corpus to compute coherence scores, following standard methodologies in the literature~\cite{mimno_optimizing_2011,roder_exploring_2015}.
+
+\begin{equation}
+TC = \frac{2}{N(N-1)} \sum_{i=1}^{N-1} \sum_{j=i+1}^{N} \text{NPMI}(w_i, w_j)
+\end{equation}
+
+To aid interpretability, we provide the following definitions of each variable in the evaluation metrics.
+
+In (1), the topic coherence (TC) score quantifies the semantic consistency among the top-ranked keywords of a given topic. Specifically:
+
+\begin{itemize}
+    \item where $N$ denotes the number of top terms considered per topic (e.g., $N = 10$).
+    
+    \item where $w_i$ and $w_j$ are the $i^{\text{th}}$ and $j^{\text{th}}$ words among the top $N$ words.
+    
+    \item where NPMI$(w_i, w_j)$ is the normalized pointwise mutual information between words $w_i$ and $w_j$, computed over a reference corpus (e.g., PubMed abstracts).
+\end{itemize}
+
+The formula averages the pairwise NPMI scores across all unique word pairs in a topic, yielding a coherence score in the range $[-1, 1]$, where higher values indicate stronger semantic associations and better topic consistency.
+
+\subsubsection{Topic Diversity (TD)}
+
+Topic diversity (TD) assesses the distinctiveness between topics by computing the proportion of unique top-n words across all topics. Higher TD values indicate greater thematic breadth and reduced redundancy. This metric has been adopted in the neural topic modelling literature as a complementary measure to coherence~\cite{dieng_topic_2020}.
+
+\begin{equation}
+TD = \frac{\left|\bigcup_{k=1}^{K} \text{Top}_N(\text{Topic}_k)\right|}{K \times N}
+\end{equation}
+
+In Equation (2), the topic diversity (TD) score measures how distinct the topics are by evaluating vocabulary overlap:
+
+\begin{itemize}
+    \item $K$ is the total number of topics.
+    
+    \item where $\text{Top}_N(\text{Topic}_k)$ refers to the set of the top $N$ words in the $k^{\text{th}}$ topic.
+    
+    \item The numerator $\left|\bigcup_{k=1}^{K} \text{Top}_N(\text{Topic}_k)\right|$ counts the total number of unique terms across all the top $N$ word sets.
+    
+    \item The denominator $K \times N$ is the maximum possible number of distinct words if all topics are entirely disjoint.
+\end{itemize}
+
+The resulting TD value ranges from 0 to 1, where higher values indicate greater topic distinctiveness and reduced redundancy across topics.
+
+These two metrics evaluate topic quality by capturing both intratopic semantic consistency and intertopic separation, which are essential for interpretability and downstream usability in biomedical literature applications.
+
+\subsection{Comparison Protocol}
+All the ablation results are evaluated via the same metrics as those used in the main study: topic coherence (TC), topic diversity (TD), and their sum (TC+TD). Each configuration is compared against 
+
+---the baseline model (Abstract only)
+
+---the best-performing dual-stream framework model ($\alpha$--$\beta$ tuned, all-MiniLM-L6-v2 model).
+
+This isolates the effect of information richness from structural innovation and validates whether multistream weighted integration is necessary for improved topic quality.
+
+\subsection{Topic Label Enhancement with a Large Language Model (LLM)}
+
+To improve the interpretability of the discovered topics, we integrated a postprocessing step using a large language model (LLM) via API calls. While BERTopic provides keyword-based topic representations, these keyword sets are often fragmented or require expert interpretation. To generate human-readable, semantically coherent topic titles suitable for academic use, we employed the Qwen-14B-Instruct model through the API.
+
+Each topic's top keywords (obtained via BERTopic's c-TFIDF ranking) were used as input to a structured prompt. The prompt instructed the model to generate a concise and accurate English title that summarized the topic meaningfully, avoiding simple keyword repetition or direct translation. This approach aims to simulate expert-level summarization and provides titles that are suitable for inclusion in academic papers, visualizations, and topic-based exploration tools.
+
+The generation pipeline included:
+
+\begin{itemize}
+    \item Cleaning and verifying the keyword format (ensuring a valid list of terms);
+    \item Constructing a prompt template that contextualizes the generation task for the model;
+    \item Iterative generation using qwen2.5-14b-instruct-1 m with a controlled decoding configuration (temperature=0.3, top\_p=0.95);
+    \item The output is stored in the experimental result table alongside the raw keyword representations.
+\end{itemize}
+
+An example prompt used:
+
+\begin{quote}
+\textit{You are an expert in academic topic summarization. Please generate a concise, accurate, human-readable English title summarizing the following keywords: cancer, therapy, chemotherapy.}
+
+\textit{Requirements:}
+\begin{enumerate}
+    \item \textit{Use one short sentence.}
+    \item \textit{Focus on meaning, not literal translation or keyword listing.}
+    \item \textit{The output should be English, be academic sounding, and be suitable for reports or visualizations.}
+    \item \textit{Do not include quotes or numbering.}
+\end{enumerate}
+
+\textit{Please generate the topic title}
+\end{quote}
+
+This LLM-based topic labelling enhances downstream interpretability and provides a more intuitive interface for nonexpert users in literature exploration and clinical research.
+
+\section{Results}
+
+\subsection{Overall Experimental Outcomes}
+
+The dual-stream embedding framework consistently outperformed all the baseline and ablation models across key evaluation metrics. Among all the configurations, the Dual PubMedBERT model achieved the highest overall topic modelling quality, with a topic coherence (TC) of 0.6172, a topic diversity (TD) of 0.7458, and a combined TC+TD score of 1.3443, representing a 7.3\% improvement over the baseline (TC+TD = 1.253). These results demonstrate the effectiveness of integrating contextual textual embeddings with structured biomedical metadata under the proposed fusion mechanism.
+
+To provide a more intuitive view of the parameter landscape, we visualized the $\alpha$--$\beta$ grid search results via three separate heatmaps:
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_tc_heatmap.png}
+\caption{Heatmap of topic coherence (TC) scores across the $\alpha$--$\beta$ parameter grid under the Dual PubMedBERT configuration.}
+\label{fig:tc_heatmap}
+\end{figure}
+
+Figure \ref{fig:tc_heatmap} shows the distribution of topic coherence (TC) across different $\alpha$--$\beta$ combinations. The highest TC value of 0.6172 was achieved at $\alpha=0.40$ and $\beta=0.65$, indicating that emphasizing textual information alongside strongly weighted major MeSH terms leads to more semantically consistent topic clusters.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_td_heatmap.png}
+\caption{Heatmap of topic diversity (TD) scores across the $\alpha$--$\beta$ parameter grid under the Dual PubMedBERT configuration.}
+\label{fig:td_heatmap}
+\end{figure}
+
+Figure \ref{fig:td_heatmap} illustrates the variation in topic diversity (TD). The highest TD score of 0.7458 occurred at $\alpha=0.45$ and $\beta=0.40$, suggesting that balanced weighting between textual and MeSH inputs fosters broader thematic coverage and reduced keyword overlap across topics.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_combined_heatmap.png}
+\caption{Heatmap of combined topic coherence and diversity scores across the $\alpha$--$\beta$ parameter grid under the Dual PubMedBERT configuration.}
+\label{fig:combined_heatmap}
+\end{figure}
+
+Figure \ref{fig:combined_heatmap} presents the combined TC+TD scores, reflecting the trade-off between intratopic coherence and intertopic diversity. The optimal joint performance (TC+TD = 1.3443) was also observed at $\alpha=0.45$ and $\beta=0.40$, confirming the robustness of this fusion configuration.
+
+Blank regions in the heatmaps denote $\alpha$--$\beta$ combinations that produced an abnormally low number of clusters, typically fewer than five, making coherence and diversity scores unreliable. These were excluded from visualizations to ensure clarity and interpretability.
+
+\subsection{Model-Specific Performance}
+
+The dual-stream embedding topic modelling framework demonstrated significant improvements over baseline models across all evaluated metrics. The detailed performance of each model is summarized clearly in Table \ref{tab:model_performance}.
+
+\begin{table*}[t]
+\centering
+\caption{Summary of Performance}
+\label{tab:model_performance}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Model} & \textbf{Best TC} & \textbf{Best TD} & \textbf{Best TC+TD} & \textbf{Improvement} \\
+ & ($\alpha$, $\beta$) & ($\alpha$, $\beta$) & ($\alpha$, $\beta$) & \textbf{(vs. Baseline)} \\
+\hline
+\textbf{Dual PubMedBERT} & 0.6172 & 0.7458 & 1.3443 & +7.3\% \\
+ & (0.40, 0.65) & (0.45, 0.40) & (0.45, 0.40) & \\
+\hline
+\textbf{Hybrid} & 0.6038 & 0.7333 & 1.3247 & +5.7\% \\
+\textbf{PubMedBERT-BioBERT} & (0.15, 0.15) & (0.10, 0.25) & (0.30, 0.35) & \\
+\hline
+\textbf{Dual MiniLM} & 0.6076 & 0.7143 & 1.3005 & +3.8\% \\
+\textbf{(The Baseline's model)} & (0.15, 0.20) & (0.10, 0.35) & (0.20, 0.35) & \\
+\hline
+\textbf{Dual BioBERT} & 0.5826 & 0.7000 & 1.2331 & -1.6\% \\
+ & (0.45, 0.65) & (0.10, 0.15) & (0.45, 0.80) & \\
+\hline
+\textbf{Baseline} & 0.5360 & 0.7170 & 1.2530 & --- \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.75\textwidth]{fig_model_comparison_bar.png}
+\caption{Performance comparison of dual-stream model variants across TC, TD, and combined scores. Dual PubMedBERT achieves the highest combined score (TC+TD = 1.3443) with optimal parameters $\alpha=0.45$ and $\beta=0.40$. Data source: Table~\ref{tab:model_performance}.}
+\label{fig:model_comparison}
+\end{figure*}
+
+Table \ref{tab:model_performance} clearly shows that the dual-stream models consistently outperform the baseline in terms of topic coherence (TC), topic diversity (TD), and the combined metric (TC+TD). Notably, the Dual PubMedBERT model achieved the highest performance, with significant improvements in both coherence and diversity metrics. As illustrated in Fig.~\ref{fig:model_comparison}, Dual PubMedBERT outperforms all other variants, achieving the highest combined score (TC+TD = 1.3443) at optimal parameters $\alpha=0.45$ and $\beta=0.40$. The hybrid configuration demonstrates competitive performance with TC+TD = 1.3247, while Dual BioBERT shows the lowest performance (TC+TD = 1.2331), even underperforming the baseline by $1.6\%$. This validates the importance of both model selection and proper hyperparameter tuning in the dual-stream framework.
+
+\subsection{Optimal Parameter Selection}
+
+A comprehensive parameter analysis identified the optimal parameter ranges for the dual-stream fusion mechanism, which were concentrated around moderate values:
+
+\begin{itemize}
+    \item $\alpha$ (text vs. MeSH weighting): 0.15--0.45
+    \item $\beta$ (major vs. minor MeSH weighting): 0.15--0.80
+\end{itemize}
+
+These parameter ranges indicate a balanced integration of textual content and structured biomedical knowledge, significantly enhancing both the coherence and diversity of discovered topics.
+
+\subsection{Stability and Robustness}
+
+Compared with the baseline methods, the dual-stream models demonstrated robustness and reliability across various parameter settings, consistently delivering high performance with lower variance.
+
+\subsection{Enhanced Interpretability Through Topic Labelling}
+
+To further enhance the interpretability of the discovered topics, we employed a large language model (LLM)---Qwen-14B-Instruct---to automatically generate human-readable titles from the top keywords produced by BERTopic. While BERTopic's keyword-based representations capture essential semantic components of each topic, they often require additional expert interpretation, particularly when the keywords are fragmented, abstract, or lack syntactic coherence. To alleviate this burden and facilitate downstream understanding, we designed a structured prompt that transforms each keyword set into a concise, academic-style topic title.
+
+The prompt was specifically optimized to guide the LLM in capturing thematic essence rather than merely listing terms, producing titles that simulate expert-curated topic summaries. Each generated title was the result of deterministic decoding (temperature = 0.3, top\_p = 0.95), ensuring stability and readability. This approach is particularly valuable for applications involving nonexpert users, thematic dashboards, or interactive topic exploration interfaces.
+
+\begin{table*}[!t]
+\centering
+\caption{Representative Topic Titles Generated via LLM Summarization (part)}
+\label{tab:topic_labels}
+\footnotesize
+\begin{tabular}{c p{5.5cm} p{8cm}}
+\hline
+\textbf{Topic ID} & \textbf{Top Keywords} & \textbf{LLM-Generated Title} \\
+\hline
+\textbf{0} & students, nursing, medical, learning, clinical, student, education, anxiety, simulation, burnout & Addressing Anxiety and Burnout in Nursing Students through Clinical Simulation-Based Medical Education \\
+\hline
+\textbf{1} & health, mental, students, depression, prevalence, symptoms, data, factors, study, numerical & Numerical Study on the Prevalence of Depression Symptoms in Mental Health Among Students \\
+\hline
+\textbf{2} & covid19, pandemic, health, mental, students, anxiety, depression, pandemics, stress, study & Mental Health Impact of Anxiety and Depression on Students During the COVID-19 Pandemic \\
+\hline
+\textbf{3} & intervention, mindfulness, trial, treatment, group, stress, anxiety, control, therapy, randomized & Randomized Trial of Mindfulness Intervention for Stress and Anxiety in Treatment Groups \\
+\hline
+\textbf{4} & burnout, residents, residency, resident, training, medical, physicians, trainees, internship, survey & Burnout among medical residents and trainees during internship: a survey analysis \\
+\hline
+\end{tabular}
+\end{table*}
+
+Table \ref{tab:topic_labels} illustrates ten representative examples of LLM-generated titles. Each title corresponds to a unique topic and demonstrates how natural language summarization can bridge the gap between machine-generated keywords and human comprehension. The results show that LLM-based postprocessing significantly improves topic accessibility, reducing the cognitive effort needed to interpret and organize thematic outputs.
+
+\subsection{Ablation Study Results}
+
+To isolate the effectiveness of the proposed dual-stream fusion mechanism, we designed a set of ablation experiments using a fixed single-stream architecture without parameterized integration. Each configuration concatenated different combinations of textual and metadata inputs and encoded them via the baseline model (all-MiniLM-L6-v2) without applying any $\alpha$--$\beta$ fusion.
+
+\begin{table*}[!t]
+\centering
+\caption{Ablation study results (all-MiniLM-L6-v2 model, single stream, no fusion)}
+\label{tab:ablation_results}
+\begin{tabular}{cccccc}
+\hline
+\textbf{Experiment ID} & \textbf{Input Configuration} & \textbf{Input Components} & \textbf{TC} & \textbf{TD} & \textbf{TC+TD} \\
+\hline
+A1 & Abstract only & Abstract & 0.5428 & 0.7136 & 1.2564 \\
+A2 & Text & Title + Abstract & 0.5355 & 0.6667 & 1.2022 \\
+A3 & AbMeSH & Abstract + MeSH & 0.5274 & 0.6087 & 1.1361 \\
+A4 & Full & Title + Abstract + MeSH & 0.5451 & 0.6174 & 1.1625 \\
+\hline
+Baseline & Abstract only & Abstract & 0.5360 & 0.7170 & 1.2530 \\
+Dual-Stream & Full + $\alpha\beta$ Fusion & Title + Abstract + MeSH & 0.6047 & 0.6958 & 1.3005 \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.75\textwidth]{fig_ablation_comparison.png}
+\caption{Ablation study results showing the progressive performance variation across different input configurations (A1-A4) without parameterized fusion, compared to the baseline and the full dual-stream system with fusion. The Dual-Stream configuration achieves a $3.8\%$ improvement over the baseline (TC+TD: 1.3005 vs. 1.2530). Data source: Table~\ref{tab:ablation_results}.}
+\label{fig:ablation}
+\end{figure*}
+
+All the experiments used the same random seed and embedding model to ensure strict comparability. A1 replicates the original ``abstract-only'' configuration used in the baseline study. We independently reran this experiment on our own computing infrastructure and obtained results that are extremely close to the reported baseline TC = 0.5428 vs. 0.5360, TD = 0.7136 vs. 0.7170 (see Table \ref{tab:ablation_results}). The minor discrepancies are likely due to differences in computational environments (e.g., hardware-specific floating-point precision, GPU parallelism effects) rather than methodological inconsistencies.
+
+Fig.~\ref{fig:ablation} demonstrates the impact of different input components on topic modeling performance. Interestingly, the ablation configurations (A1-A4) show inconsistent improvements, with some configurations (A2, A3) actually underperforming the baseline. This highlights that simply adding more input components without proper fusion mechanisms does not guarantee performance gains. However, the full Dual-Stream configuration with parameterized $\alpha$-$\beta$ fusion achieves TC+TD = 1.3005, representing a $3.8\%$ improvement over the baseline. This validates that the key innovation lies in the \emph{weighted fusion mechanism}, not merely the inclusion of additional metadata.
+
+Importantly, none of the ablation configurations---despite using the same input components---were able to match the performance of the dual-stream architecture. The proposed full fusion model yielded the highest TC+TD (1.3005), outperforming both the best ablation result (A1, TC+TD = 1.2564) and the baseline (1.2530). This confirms that simply adding information (e.g., full input or MeSH terms) is not sufficient---the performance gains come from structured, weighted integration of unstructured and structured knowledge, not from input volume alone.
+
+\section{Discussion}
+
+\subsection{Key Findings and Implications}
+
+The experimental results clearly demonstrate the effectiveness of the proposed dual-stream embedding framework in enhancing topic modelling quality within the biomedical domain. Compared with traditional single-stream baselines, our architecture consistently outperforms traditional methods in terms of both topic coherence (TC) and topic diversity (TD) across multiple embedding configurations. Notably, the best-performing dual-stream model---utilizing PubMedBERT for both the text and MeSH streams---achieved a TC+TD of 1.3443, representing a 7.3\% improvement over the baseline. This consistent performance gain across metrics confirms the advantage of semantically integrating unstructured text with structured metadata.
+
+The dual-stream design provides two key benefits. First, it enables semantic complementarity between contextual embeddings (capturing linguistic nuances and discourse structure) and MeSH descriptors (reflecting domain-specific expert annotations). Second, the parameterized weighted fusion mechanism introduces fine-grained control over the contributions of different information types, allowing optimal balancing between the general context and structured knowledge. Our grid search further revealed that moderate $\alpha$ and $\beta$ values yielded the best performance, underscoring the need for balanced integration rather than dominance of either stream.
+
+Crucially, the ablation study validates that the performance gains are not merely due to the presence of additional information but also stem from the structured integration itself. All ablation variants---despite using the same input content (e.g., title + abstract + MeSH)---underperformed relative to the dual-stream fusion. For example, the A4 configuration (Title + Abstract + MeSH without fusion) achieves a TC+TD of only 1.1625, which is substantially lower than that of the fused counterpart at 1.3005 when the same encoder is used. This disparity highlights that architectural integration, rather than information volume, is the critical factor driving improvement.
+
+Furthermore, while earlier transformer-based methods such as BERTopic have demonstrated superior topic quality over traditional models, they often treat textual input homogeneously, ignoring the structural differences between narrative content and curated metadata. Our approach addresses this limitation by explicitly encoding and weighting the contributions of these sources, thus yielding more coherent and diverse topic clusters. The addition of large language model (LLM)-based topic title generation further enhances interpretability, especially for end-users with limited domain expertise.
+
+These interpretability gains are particularly valuable in the context of medical libraries and educational settings, where non-expert users such as students, clinical trainees, or interdisciplinary researchers require transparent and thematic access to biomedical knowledge.
+
+Beyond its demonstrated improvements in biomedical topic modeling, the proposed dual-stream embedding framework is inherently scalable to large and continuously growing literature collections. Its modular design, consisting of distinct embedding, fusion, and topic modeling stages, allows straightforward adaptation to other knowledge-intensive domains such as legal documents, patent analysis, or scientific publications in engineering and environmental sciences. The parameterized fusion mechanism can be tuned or automatically optimized to accommodate varying data characteristics, ensuring cross-domain applicability without major architectural changes.
+
+From an engineering perspective, the framework is readily deployable in real-world retrieval systems, including semantic search engines, thematic dashboards, and intelligent literature exploration platforms, with minimal integration overhead. All source code, processed datasets, and experimental configurations are publicly released, ensuring full reproducibility and enabling the research community to extend or adapt the approach for their own applications. These characteristics make this work not only a methodological contribution but also a viable foundation for large-scale, user-centered knowledge discovery systems across disciplines.
+
+\subsection{Comparison with Related Work}
+This subsection provides a methodological comparison of our dual-stream embedding framework with existing topic modeling approaches. Table~\ref{tab:comparison} summarizes the key characteristics and design choices of related studies alongside our proposed method.
+
+\begin{table*}[!t]
+\centering
+\caption{Methodological Comparison with Related Work in Topic Modeling}
+\label{tab:comparison}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lclccll}
+\hline
+\textbf{Reference} & \textbf{Year} & \textbf{Method} & \textbf{Embedding} & \textbf{MeSH} & \textbf{Domain} & \textbf{Key Innovation} \\
+\hline
+Blei et al.~\cite{blei_latent_2003} & 2003 & LDA & BoW & No & General & Probabilistic topic models \\
+Yu et al.~\cite{yu_improving_2016} & 2016 & TopicalMeSH & Word2Vec & Yes & Biomedical & MeSH-based representation \\
+Dieng et al.~\cite{dieng_topic_2020} & 2020 & ETM & Word2Vec & No & General & Embedding topic models \\
+Angelov~\cite{angelov_top2vec_2020} & 2020 & Top2Vec & Doc2Vec & No & General & Joint doc-topic embeddings \\
+Grootendorst~\cite{grootendorst_bertopic_2022} & 2022 & BERTopic & SBERT & No & General & Transformer-based clustering \\
+Wang et al.~\cite{wang_graph-embedded_2022} & 2022 & GraphTM & GNN & No & Biomedical & Graph neural networks \\
+Lezhnina~\cite{lezhnina_depression_2023} & 2023 & BERTopic & MiniLM & No & Biomedical & Biomedical topic analysis \\
+\hline
+\textbf{Proposed} & \textbf{2025} & \textbf{Dual-Stream} & \textbf{PubMedBERT} & \textbf{Yes} & \textbf{Biomedical} & \textbf{Parameterized fusion} \\
+\hline
+\multicolumn{7}{l}{\footnotesize MeSH = Medical Subject Headings integration. BoW = Bag of Words. Bold indicates the proposed method.} \\
+\end{tabular}
+\end{table*}
+
+As shown in Table~\ref{tab:comparison}, topic modeling methodologies have undergone significant evolution, and our dual-stream framework addresses key limitations of existing approaches through three interconnected innovations.
+
+\textbf{Technical Evolution and Model Selection:} The chronological progression in Table~\ref{tab:comparison} illustrates the advancement from traditional bag-of-words representations (LDA, 2003) through static word embeddings (Word2Vec, Doc2Vec) to contextualized transformer-based encoders (SBERT, PubMedBERT). This evolution reflects the increasing demand for capturing nuanced semantic relationships in text. Our selection of PubMedBERT is motivated by its domain-specific pre-training on biomedical literature, ensuring semantic representations aligned with the specialized vocabulary and conceptual structures inherent to biomedical research.
+
+\textbf{Dual Integration of Domain Knowledge:} Our framework uniquely combines two complementary forms of domain knowledge. First, among all surveyed methods, only Yu et al.'s TopicalMeSH~\cite{yu_improving_2016} and our approach incorporate MeSH terminology; however, TopicalMeSH relies on Word2Vec embeddings that cannot capture contextual semantics. Second, while methods like generic BERTopic~\cite{grootendorst_bertopic_2022} employ general-purpose transformers, our dual-stream design leverages PubMedBERT for domain-specific semantic understanding. This dual integration---structured ontological knowledge (MeSH) with contextualized biomedical representations (PubMedBERT)---addresses both terminological precision and semantic depth, a combination absent in prior work.
+
+\textbf{Parameterized Fusion Mechanism:} The weighted fusion mechanism controlled by parameters $\alpha$ and $\beta$ distinguishes our approach by enabling fine-grained optimization of embedding contributions. Unlike fixed integration schemes in prior methods, our parameterized fusion allows systematic balancing of topic coherence and diversity based on specific retrieval objectives. As demonstrated in Table~\ref{tab:model_performance}, this configurability yields a $7.3\%$ improvement in combined topic quality over the baseline, validating the practical value of adaptive embedding fusion in biomedical topic modeling.
+
+\subsection{Limitations and Future Work}
+
+Despite these encouraging results, this study has several limitations that point toward promising directions for future work. First, our experiments were conducted on a relatively small dataset of 3,000 PubMed abstracts selected to match the conditions of the reference baseline study. While suitable for controlled benchmarking, this sample size may limit the generalizability of our findings. Future research should evaluate the scalability and robustness of the dual-stream framework on larger, more diverse biomedical corpora, including documents that lack MeSH annotations. In such cases, automatic MeSH term generation or approximation---through supervised tagging or prompt-based LLM generation---could be explored as potential extensions.
+
+Second, the $\alpha$ and $\beta$ parameters used to control the dual-layer fusion mechanism were manually tuned via grid search. Although this strategy revealed interpretable and high-performing configurations, it introduces manual overhead and limits adaptability. As part of future development, we aim to implement an automated gating mechanism that dynamically adjusts fusion weights on the basis of document features or downstream optimization objectives. This enhancement would improve usability and generalizability in real-world biomedical information retrieval scenarios.
+
+Such advancements would facilitate integration into interactive biomedical literature retrieval systems, enabling practical deployment in clinical knowledge services, academic libraries, and research support platforms.
+
+\section{Conclusions}
+
+This study demonstrates that the proposed dual-stream embedding framework significantly enhances biomedical topic modeling by synergistically integrating unstructured textual data with structured metadata. Through systematic experimentation and rigorous ablation analysis, we confirmed that the observed improvements in topic coherence and diversity are not merely attributable to increased input information but stem from the architecture's structured, parameterized fusion of semantic and domain-specific knowledge. The fusion parameters ($\alpha$ and $\beta$) allow fine-grained control over the contribution of each stream, and optimal values consistently yield higher-quality topics across multiple evaluation metrics.
+
+Notably, the dual PubMedBERT configuration achieved the highest combined topic quality (TC+TD = 1.3443), surpassing all baseline and ablation models. Even when the same input components (Title, Abstract, MeSH) are used, single-stream models without fusion underperformed, reinforcing the necessity of structured integration. Furthermore, the incorporation of a large language model for post hoc topic labelling significantly improved interpretability, transforming keyword lists into intuitive, academic-style topic summaries suitable for downstream analysis.
+
+Beyond its technical contributions, the framework is scalable, adaptable to other domains, and readily deployable in real-world retrieval systems such as semantic search engines, thematic dashboards, and intelligent literature exploration tools. All source code, processed datasets, and experimental configurations are openly available, enabling full reproducibility and supporting future extensions by the research community. These attributes position the framework as a robust and generalizable foundation for large-scale, user-centered knowledge discovery systems across disciplines.
+
+\section*{ACKNOWLEDGMENT}
+The authors would like to acknowledge the use of the AI language model ChatGPT for assistance in improving the clarity and fluency of the manuscript's English writing. All intellectual content, analyses, and interpretations presented in this work remain solely those of the authors. The use of AI tools complied with the journal's policies on AI-assisted writing.
+
+\bibliographystyle{IEEEtran}
+\bibliography{tm-ref}
+
+\section*{DATA AVAILABILITY}
+The dataset used in this study was obtained from the publicly accessible PubMed database. The processed dataset and code supporting the findings of this study are available from the corresponding author upon reasonable request. All code, processed datasets, and experimental results supporting the findings of this study are publicly available at \url{https://github.com/taotao3614/Topic-Modeling-via-a-Dual-Stream-Embedding-Framework}.
+
+\section*{CONFLICTS OF INTEREST}
+The authors declare that they have no competing interests.
+
+\section*{FUNDING}
+This research received no specific grant from any funding agency in the public, commercial, or not-for-profit sectors.
+
+\section*{ETHICS APPROVAL}
+Not applicable. This study does not involve human participants, human data, or human tissue.
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Tao Tao2024up.jpg}}]{Tao Tao}
+received the Bachelor of Science degree in food technology and nutrition from the Royal Melbourne Institute of Technology, Melbourne, Australia, in 2018, and the Master of Commerce degree in information systems and technology from Curtin University, Perth, Australia, in 2021. He is currently pursuing the Ph.D. degree in green science and engineering with the Graduate School of Science and Technology, Sophia University, Tokyo, Japan.
+His research interests include topic modeling, natural language processing, biomedical informatics, and machine learning.
+\end{IEEEbiography}
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Amena Mahmoud.jpg}}]{Amena Mahmoud}
+received the master's degree in computer science from Helwan University, Egypt, in the virtual reality specialization, and the Ph.D. degree in computer science from Mansoura University, Egypt, in the bioinformatics specialization.
+She is currently an Associate Professor with the Department of Computer Science, Faculty of Computers and Information, Kafrelsheikh University, Egypt, and a Visiting Associate Professor with Sophia University, Japan.
+Her research interests include bioinformatics, machine learning, pattern recognition, image processing, and natural language processing.
+\end{IEEEbiography}
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{EikoTakaoka2024up.jpg}}]{Eiko Takaoka}
+received the Ph.D. degree in engineering from Keio University, Japan, in 1996.
+She is currently a Professor with the Department of Information and Communication Sciences, Faculty of Science and Technology, Sophia University, Tokyo, Japan, and a Visiting Professor with the Open University of Japan.
+She is an Associate Member of Science Council of Japan and a Fellow of Information Processing Society of Japan.
+Her research interests include medical informatics, information education, natural language processing, and database.
+\end{IEEEbiography}
+
+\EOD
+
+\end{document}

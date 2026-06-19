@@ -1,0 +1,80 @@
+Response to Reviewer 2
+
+Manuscript: Topic Modelling for Biomedical Literature Retrieval via a Dual-Stream Embedding Framework
+Journal: Journal of Advanced Computational Intelligence and Intelligent Informatics (JACIII)
+
+We thank Reviewer 2 for the comments. We respond to all 8 points below; line numbers refer to the revised manuscript.
+
+Comment 1:
+"It is not common for an article to use subsections in the introduction."
+
+Response: Addressed.
+(This concern overlaps with the writing-quality issues raised in Comment 4; see also General Response, Category 1.)
+
+All four subsections in the Introduction have been removed. The Introduction is now written as continuous, cohesive prose with no internal subsections.
+
+Comment 2:
+"In the 'Related Work' section, the authors merely provide a brief analysis of the literature without explaining how these studies relate to the present research. Additionally, the 'Related Work' section is divided into seven subsections, which is overly lengthy; we recommend that the authors reorganize this section."
+
+Response: Addressed.
+(This concern is shared by Reviewer 1, Comment 11; see also General Response, Category 3.)
+
+The Related Work section was reorganized from seven subsections into three thematic subsections:
+1. Probabilistic and Neural Topic Models
+2. Domain-Specific Embeddings and Structured Knowledge in NLP
+3. Evaluation Frameworks and Gaps in Biomedical Topic Modelling
+
+Each subsection now concludes with an explicit sentence or paragraph relating the cited work to the present study—explaining how our framework differs from, extends, or addresses limitations of those approaches.
+
+Comment 3:
+"The font size in the figures within the manuscript is too small, which affects the overall readability of the article. Additionally, the images in the manuscript are too blurry; we recommend using vector graphics."
+
+Response: Addressed.
+(This concern is shared by Reviewer 1, Comment 9; see also General Response, Category 2.)
+
+All five figures have been regenerated with enlarged axis-label fonts (≥15 pt), larger annotation text (≥9 pt), clearly labelled colour bars, and exported as PDF vector graphics to replace the original PNG bitmaps. The regenerated PDF figures are submitted as separate files, and the manuscript's figure paths have been updated accordingly.
+
+Comment 4:
+"The author's writing is poor. Each section in the manuscript contains too many subsections, resulting in a lack of coherence throughout the manuscript."
+
+Response: Addressed.
+(This concern is shared by Reviewer 1, Comment 8; see also General Response, Category 1.)
+
+We carried out a thorough structural revision:
+- Introduction: 4 subsections → 0 (continuous prose).
+- Related Work: 7 subsections → 3 thematic subsections.
+- Methodology: Three short fusion-implementation subsections merged into one; content retained.
+- Results: 6 subsections → 5 (parameter sensitivity merged with main results).
+- Discussion: "Key Findings" condensed from 7 paragraphs to 3; off-topic material removed.
+
+The prose of all restructured sections was rewritten for coherence and concision.
+
+Comment 5:
+"The manuscript contains a mixture of 'formula' and 'equation' notation."
+
+Response: Addressed.
+The single occurrence of "formula" (in the Results section) was changed to "equation." Equations 3 and 4 were given \label commands and are now cross-referenced via \ref throughout the text, consistent with the treatment of Equations 1 and 2.
+
+Comment 6:
+"The manuscript notes that the Dual-Flow model consistently outperforms the baseline model under various parameter settings; however, in Table 2, Dual BioBERT actually performs worse than the baseline."
+
+Response: Addressed.
+(See also General Response, Category 5.)
+
+We corrected this factual inconsistency in the Abstract, the Results section, and the Discussion. The text now accurately states that three of the four dual-stream configurations outperform the baseline on the combined TC+TD metric, while Dual BioBERT achieves TC+TD = 1.2331, which is 1.6 % below the baseline (1.2530). We explain that this indicates the benefit of dual-stream fusion is conditional on an embedding model that is well-matched to the task domain. We also corrected the model-name column of Table 1, whose entries had been misaligned with the corresponding embedding models.
+
+Comment 7:
+"The ablation experiments in the manuscript do not fully demonstrate the advantages of the dual-flow framework proposed in this paper."
+
+Response: Addressed.
+(This concern is shared by Reviewer 1, Comment 6; see also General Response, Category 4.)
+
+The ablation discussion has been deepened to explain mechanistically why single-stream concatenation fails and why weighted fusion succeeds. Across configurations A2–A4, TC remains stable while TD collapses, because naive concatenation injects heavily-reused generic MeSH vocabulary that the class-based TF-IDF cannot suppress, inflating cross-topic keyword overlap. The dual-stream architecture encodes MeSH separately and applies weighted fusion, avoiding this failure mode.
+
+In addition, in response to Reviewer 3's related technical comment (Comment 1), we examined how the major/minor MeSH weighting is applied and compared the per-term weighting scheme with a document-level group-normalised alternative. This analysis, reported in the new subsection "Effect of the β Weighting Scheme," confirms that topic quality is robust to the precise weighting scheme and further clarifies the role of the structured MeSH stream in the dual-stream design.
+
+Comment 8:
+"The discussion section takes up a significant portion of the paper, but much of the content is irrelevant and fails to highlight the manuscript's key contributions."
+
+Response: Addressed.
+The "Key Findings and Implications" subsection was condensed from seven paragraphs to three focused paragraphs. Specifically, we removed material that duplicated the Conclusion section and content that was peripheral to the paper's main contributions. The three remaining paragraphs focus on: (1) the overall performance advantage and its conditional nature; (2) the mechanistic role of the two-layer weighted fusion; and (3) the broader applicability and modularity of the framework.

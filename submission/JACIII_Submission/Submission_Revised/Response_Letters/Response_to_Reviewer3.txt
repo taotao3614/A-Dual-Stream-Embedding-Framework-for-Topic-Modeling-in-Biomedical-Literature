@@ -1,0 +1,40 @@
+Response to Reviewer 3
+
+Manuscript: Topic Modelling for Biomedical Literature Retrieval via a Dual-Stream Embedding Framework
+Journal: Journal of Advanced Computational Intelligence and Intelligent Informatics (JACIII)
+
+We thank Reviewer 3 for the positive assessment of the dual-stream design and for two technical comments, which we address below.
+
+Comment 1:
+"There is one point of concern regarding the design of parameter β. Currently, each MeSH term is assigned a uniform weight depending on whether it is major or minor; however, given that the number of major and minor terms varies across documents, this formulation may cause the effective contribution ratio between them to depend on term counts. Therefore, rather than assigning weights to individual terms, it may be more appropriate to define β in terms of the overall weight distribution—e.g., by normalizing so that the contribution ratio of major and minor terms remains constant at the document level—which would better reflect the intended control."
+
+Response: Addressed.
+
+We agree with this observation. The concern is mathematically exact: with M major and m minor descriptors, the per-term formulation gives the major group an effective contribution of Mβ / (Mβ + m(1−β)), which depends on the document-level term counts.
+
+To quantify how much this matters on our corpus, we analysed the MeSH metadata directly. Each record carries, on average, 2.0 major descriptors and 11.9 minor descriptors (medians 2 and 11). Because minor descriptors outnumber major ones by roughly six to one, the per-term formulation yields an effective major-group contribution well below the nominal β; at a nominal β = 0.4, for instance, the mean effective major-group weight across documents is only about 0.13. The concern is therefore valid, and on this dataset it is quantitatively material.
+
+We have taken the following steps:
+
+(a) Corrected description of β in the Methodology. The parameter is no longer described as a major/minor "ratio." It is now accurately characterised as a per-term relative weighting parameter that monotonically increases the emphasis on major descriptors as it grows, while the effective document-level contribution also depends on term counts.
+
+(b) Implemented and compared the group-normalised formulation. We added a new subsection to the Results section, "Effect of the β Weighting Scheme," which defines the document-level group-normalised variant the reviewer suggested,
+e_MeSH = β · mean(major embeddings) + (1−β) · mean(minor embeddings),
+in which the major-to-minor contribution ratio is fixed at β:(1−β) for every record. We re-ran the optimal Dual PubMedBERT configuration (α = 0.45) under both formulations at four representative values β ∈ {0.20, 0.40, 0.50, 0.60}. Topic coherence was essentially unchanged (within 0.02) and the combined TC+TD score differed only modestly, with neither formulation consistently superior. This indicates that downstream topic quality is robust to the precise major/minor weighting scheme, even though the two formulations differ substantially in their nominal interpretation of β.
+
+(c) Design rationale. We retain the per-term formulation for consistency with the grid search reported in the paper, and we now recommend the group-normalised variant as the more interpretable choice for corpora in which the number of MeSH descriptors per record varies widely.
+
+Comment 2:
+"MeSH is not merely a collection of independent terms, but a rich knowledge organization system that encodes hierarchical relationships, synonym mappings, and contextual information through qualifiers. However, in the current framework, these descriptors are treated essentially as independent tokens and aggregated via simple averaging. It would be helpful to clarify the rationale for not leveraging such structured information, and to discuss whether incorporating these richer aspects of MeSH could further improve the representation."
+
+Response: Addressed.
+
+We added a paragraph to the Methodology section under the "Design Rationale" heading that explains why the current formulation deliberately treats descriptors as independent terms:
+
+1. Implicit capture by contextual encoders. Pre-trained biomedical language models such as PubMedBERT and BioBERT have been trained on large corpora containing MeSH annotations and their associated literature. Much of the hierarchical and synonymous relatedness between MeSH descriptors is therefore implicitly captured in the contextual embedding space, even without explicit graph-structure encoding.
+
+2. Applicability and reproducibility. Relying solely on descriptor strings and the MajorTopicYN flag means the method is applicable to any MEDLINE record without requiring access to the MeSH ontology tree at inference time. This keeps the pipeline simple and reproducible.
+
+3. Controlled comparison. The minimal formulation isolates the contribution of the dual-stream architecture itself, rather than conflating it with the effect of ontology-aware aggregation.
+
+The Limitations section now explicitly discusses how hierarchy-aware aggregation (e.g., weighting descendant terms by tree depth), graph-based encoders over the MeSH tree, or qualifier-conditioned embeddings could further enrich the structured stream as future work, while acknowledging that the current formulation does not exploit the full richness of MeSH.

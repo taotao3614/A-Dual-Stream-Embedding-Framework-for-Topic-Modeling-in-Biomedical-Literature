@@ -1,0 +1,49 @@
+# --- Local tooling / IDE ---
+.claude/
+
+# --- LaTeX build artifacts ---
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex
+*.nav
+*.snm
+*.vrb
+*.idx
+*.ilg
+*.ind
+*.bcf
+*.run.xml
+*.dvi
+*.fff
+*.ttt
+
+# --- Python cache ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Zip bundles (rebuildable submission packages) ---
+*.zip
+
+# --- Duplicate 26MB heatmap PNGs ---
+# Keep only the canonical copies at submission/ root (used by the main IEEE
+# Access access.tex). The JACIII final manuscript uses the small PDF figures,
+# so it is unaffected. To compile the variants below, restore these PNGs.
+submission/fig/fig_tc_heatmap.png
+submission/fig/fig_td_heatmap.png
+submission/fig/fig_combined_heatmap.png
+submission/final_version/fig_tc_heatmap.png
+submission/final_version/fig_td_heatmap.png
+submission/final_version/fig_combined_heatmap.png
+submission/JACIII_Submission/fig/fig_tc_heatmap.png
+submission/JACIII_Submission/fig/fig_td_heatmap.png
+submission/JACIII_Submission/fig/fig_combined_heatmap.png
